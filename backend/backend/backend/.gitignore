@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+target/
+node_modules/
+.env
+.idea/
+__pycache__/
+.vscode/
