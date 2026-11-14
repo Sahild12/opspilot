@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: demo-shop
+
+server:
+  port: 8081
+
+opspilot:
+  url: http://localhost:8080
