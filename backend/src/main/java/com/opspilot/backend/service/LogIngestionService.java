@@ -16,11 +16,14 @@ public class LogIngestionService {
 
     private final ServiceRepository serviceRepository;
     private final LogEventRepository logEventRepository;
+    private final ErrorCounter errorCounter;
 
     public LogIngestionService(ServiceRepository serviceRepository,
-                               LogEventRepository logEventRepository) {
+                               LogEventRepository logEventRepository,
+                               ErrorCounter errorCounter) {
         this.serviceRepository = serviceRepository;
         this.logEventRepository = logEventRepository;
+        this.errorCounter = errorCounter;
     }
 
     @Transactional
@@ -31,6 +34,15 @@ public class LogIngestionService {
         Instant when = req.timestamp() != null ? req.timestamp() : Instant.now();
 
         LogEvent event = new LogEvent(svc, req.level(), req.message(), req.traceId(), when);
-        return logEventRepository.save(event).getId();
+        Long id = logEventRepository.save(event).getId();
+
+        if ("ERROR".equals(req.level()) || "FATAL".equals(req.level())) {
+            try {
+                errorCounter.recordError(svc.getName());
+            } catch (Exception e) {
+                // Redis trouble must never lose a log already saved in the database
+            }
+        }
+        return id;
     }
 }
