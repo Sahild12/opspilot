@@ -39,9 +39,9 @@ public class LogIngestionService {
         if ("ERROR".equals(req.level()) || "FATAL".equals(req.level())) {
             try {
                 errorCounter.recordError(svc.getName());
-            } catch (Exception e) {
-                // Redis trouble must never lose a log already saved in the database
-            }
+           } catch (Exception e) {
+          System.err.println("REDIS COUNT FAILED: " + e);
+    }
         }
         return id;
     }

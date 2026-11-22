@@ -40,6 +40,7 @@ public class SpikeDetector {
                 sum += counter.count(name, current - i);
             }
             double baseline = Math.max(sum / BASELINE_MINUTES, 1.0);
+            log.info("CHECK service={} errorsThisMinute={} baseline={}", name, now, String.format("%.1f", baseline));
 
             if (now >= MIN_ERRORS && now >= baseline * MULTIPLIER && counter.tryMarkSpike(name)) {
                 log.warn("SPIKE DETECTED service={} errorsThisMinute={} baseline={}",
