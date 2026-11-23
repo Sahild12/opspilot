@@ -97,6 +97,11 @@ public class IncidentService {
         return toDto(inc, true);
     }
 
+    @Transactional
+public void saveSummary(Long id, String summary) {
+    incidents.findById(id).ifPresent(i -> i.setSummary(summary));
+}
+
     private IncidentDto toDto(Incident i, boolean withTimeline) {
         List<IncidentDto.TimelineItem> timeline = withTimeline
                 ? events.findByIncidentIdOrderByOccurredAtAsc(i.getId()).stream()
