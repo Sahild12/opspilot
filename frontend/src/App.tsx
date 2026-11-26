@@ -18,8 +18,13 @@ export default function App() {
 
   const refresh = useCallback(async () => {
     try {
-      setIncidents(await listIncidents());
-      if (selectedId !== null) setSelected(await getIncident(selectedId));
+      const list = await listIncidents();
+      setIncidents(list);
+      const id = selectedId ?? list[0]?.id ?? null; // auto-pick newest
+      if (id !== null) {
+        if (selectedId === null) setSelectedId(id);
+        setSelected(await getIncident(id));
+      }
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -28,7 +33,7 @@ export default function App() {
 
   useEffect(() => {
     const first = setTimeout(refresh, 0);
-    const timer = setInterval(refresh, 5000); // live updates every 5 seconds
+    const timer = setInterval(refresh, 5000);
     return () => {
       clearTimeout(first);
       clearInterval(timer);
@@ -58,6 +63,9 @@ export default function App() {
   }
 
   const analysis = parseAnalysis(selected?.summary ?? null);
+  const open = incidents.filter((i) => i.status === "OPEN").length;
+  const resolved = incidents.length - open;
+  const highestPeak = incidents.reduce((m, i) => Math.max(m, i.peakErrorsPerMin), 0);
 
   return (
     <div className="layout">
@@ -84,8 +92,21 @@ export default function App() {
       </aside>
 
       <main>
+        <div className={`banner ${open > 0 ? "bad" : "good"}`}>
+          {open > 0
+            ? `${open} active incident${open > 1 ? "s" : ""} need attention`
+            : "All systems normal"}
+        </div>
+
+        <div className="stats">
+          <div className="stat"><span>{open}</span><label>Open</label></div>
+          <div className="stat"><span>{resolved}</span><label>Resolved</label></div>
+          <div className="stat"><span>{incidents.length}</span><label>Total</label></div>
+          <div className="stat"><span>{highestPeak}</span><label>Highest peak / min</label></div>
+        </div>
+
         {!selected ? (
-          <p className="muted">Select an incident.</p>
+          <p className="muted">No incident to show yet.</p>
         ) : (
           <>
             <h2>
@@ -96,29 +117,23 @@ export default function App() {
                 {busy ? "Working..." : "Analyze with AI"}
               </button>
               {selected.status === "OPEN" && (
-                <button disabled={busy} onClick={() => act(resolveIncident)}>
+                <button className="secondary" disabled={busy} onClick={() => act(resolveIncident)}>
                   Resolve
                 </button>
               )}
             </div>
 
-            {analysis && (
+            {analysis ? (
               <section className="panel">
                 <h3>AI analysis</h3>
                 <p>{analysis.summary}</p>
                 <h4>Likely causes</h4>
-                <ol>
-                  {analysis.likelyCauses.map((c, n) => (
-                    <li key={n}>{c}</li>
-                  ))}
-                </ol>
+                <ol>{analysis.likelyCauses.map((c, n) => <li key={n}>{c}</li>)}</ol>
                 <h4>What to check</h4>
-                <ol>
-                  {analysis.steps.map((s, n) => (
-                    <li key={n}>{s}</li>
-                  ))}
-                </ol>
+                <ol>{analysis.steps.map((s, n) => <li key={n}>{s}</li>)}</ol>
               </section>
+            ) : (
+              <p className="muted">No AI analysis yet. Click "Analyze with AI".</p>
             )}
 
             <section className="panel">
